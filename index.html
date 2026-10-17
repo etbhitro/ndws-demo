@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>NDWS Move</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Меловой фон зала, кобальт — бренд и действие, оранжевый — серия и энергия, золото — призы.
+     Крупные цифры — Dela Gothic One, как номера на табло; текст — Manrope. Пять вкладок внизу, «+» по центру. */
+  :root{
+    --bg:#eef0f3; --surface:#ffffff; --ink:#0d1020; --muted:#636b7c; --line:rgba(13,16,32,.08); --soft:rgba(13,16,32,.05);
+    --accent:#2a3cff; --accent-2:#1b27c9; --on-accent:#ffffff; --flame:#f2601f; --gold:#c8920f; --ok:#12925c;
+    --track:rgba(42,60,255,.12);
+    --shadow:0 1px 2px rgba(13,16,32,.04),0 14px 30px -18px rgba(13,16,32,.25);
+    --display:"Dela Gothic One","Arial Black",Impact,sans-serif;
+    --body:"Manrope",-apple-system,"Segoe UI",Roboto,sans-serif;
+    --r:22px;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#0b0d17; --surface:#151827; --ink:#eef0fa; --muted:#9aa1b8; --line:rgba(255,255,255,.08); --soft:rgba(255,255,255,.06);
+    --accent:#6f7dff; --accent-2:#5462f0; --on-accent:#070a1f; --flame:#ff8a52; --gold:#f2c45a; --ok:#3ccf8e; --track:rgba(111,125,255,.18);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 30px -18px rgba(0,0,0,.7); color-scheme:dark }}
+  :root[data-theme="dark"]{
+    --bg:#0b0d17; --surface:#151827; --ink:#eef0fa; --muted:#9aa1b8; --line:rgba(255,255,255,.08); --soft:rgba(255,255,255,.06);
+    --accent:#6f7dff; --accent-2:#5462f0; --on-accent:#070a1f; --flame:#ff8a52; --gold:#f2c45a; --ok:#3ccf8e; --track:rgba(111,125,255,.18);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 30px -18px rgba(0,0,0,.7); color-scheme:dark }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font:500 16px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .wrap{max-width:560px;margin:0 auto;padding-block:14px calc(108px + env(safe-area-inset-bottom,0px));
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .view[hidden]{display:none}
+  .num{font-family:var(--display);font-weight:400;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+
+  /* шапка */
+  .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo b{font:400 22px/1 var(--display);letter-spacing:.02em}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--soft);border-radius:999px;padding:3px 8px}
+  .me{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:999px;padding:4px 12px 4px 4px;box-shadow:var(--shadow);border:0}
+  .ava{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;color:#fff;flex:none}
+  .lb span.ava,.p-head span.ava,.pd span.ava{color:#fff}
+  .me b{font:400 15px var(--display)}
+  h1{font:400 26px/1.15 var(--display);margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+  .sec{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 10px}
+  .sec h2{font:800 13px var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+  .sec a,.link{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;background:none;border:0;padding:0}
+
+  /* сегодня */
+  .today{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+  .ring{position:relative;width:132px;height:132px}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring .in{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+  .ring .in b{font:400 26px/1 var(--display)}
+  .ring .in span{font-size:12px;color:var(--muted);margin-top:4px}
+  .stats{display:grid;gap:10px;min-width:0}
+  .stat span{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .stat b{font:400 22px/1.1 var(--display)}
+  .flame{color:var(--flame)}
+  .boost{display:flex;gap:12px;align-items:center;margin-top:12px;border-radius:18px;padding:12px 14px;
+    background:linear-gradient(120deg,var(--accent),var(--accent-2));color:var(--on-accent)}
+  .boost .x{font:400 28px/1 var(--display)}
+  .boost p{margin:0;font-size:14px;line-height:1.35;flex:1;min-width:0}
+  .boost.off{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .boost.off .x{color:var(--muted)}
+  .btn{border:0;border-radius:14px;padding:12px 16px;font-weight:800;background:var(--accent);color:var(--on-accent);white-space:nowrap}
+  .btn:active{transform:scale(.97)}
+  .btn.light{background:rgba(255,255,255,.18);color:inherit}
+  .boost.off .btn.light{background:var(--accent);color:var(--on-accent)}
+  .btn.ghost{background:var(--soft);color:var(--ink)}
+  .btn.wide{width:100%;padding:16px;font-size:17px;border-radius:16px}
+
+  .chal{display:grid;gap:10px}
+  .ch{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:8px}
+  .ch-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .ch-top b{font-weight:800}
+  .ch-top span{font-size:13px;color:var(--muted);white-space:nowrap}
+  .bar{height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+  .ch-foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+  .ch-foot em{font-style:normal;font-weight:800;color:var(--gold)}
+  .dots{display:flex;gap:5px}
+  .dots i{width:22px;height:8px;border-radius:4px;background:var(--track)}
+  .dots i.on{background:var(--flame)}
+
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px;border:0;text-align:left;display:grid;gap:10px}
+  .tile .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--track);color:var(--accent)}
+  .tile b{font-weight:800}
+  .tile span{font-size:13px;color:var(--muted);display:block}
+
+  /* лента */
+  .post{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+  .p-head{display:flex;gap:10px;align-items:center;padding:14px 16px 10px}
+  .p-head b{display:block;font-weight:800;line-height:1.2}
+  .p-head span{font-size:13px;color:var(--muted)}
+  .p-art{aspect-ratio:16/9;max-width:100%;display:grid;place-items:center;position:relative;overflow:hidden}
+  .p-art .big{font:400 44px/1 var(--display);color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.25);text-align:center}
+  .p-art .big small{display:block;font:800 13px var(--body);letter-spacing:.1em;text-transform:uppercase;opacity:.85;margin-top:8px}
+  .p-text{padding:12px 16px 4px;margin:0}
+  .p-act{display:flex;gap:6px;padding:6px 10px 12px}
+  .p-act button{border:0;background:none;display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:10px;color:var(--muted);font-weight:700}
+  .p-act button.on{color:var(--flame)}
+  .p-pts{margin-left:auto;align-self:center;font-size:13px;font-weight:800;color:var(--accent);padding-right:6px}
+
+  /* рейтинг */
+  .seg{display:flex;background:var(--soft);border-radius:14px;padding:4px;margin-bottom:16px}
+  .seg button{flex:1;border:0;background:none;border-radius:10px;padding:9px;font-weight:700;color:var(--muted)}
+  .seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin-bottom:14px}
+  .pd{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px 8px 12px;text-align:center;display:grid;justify-items:center;gap:6px;min-width:0}
+  .pd .ava{width:46px;height:46px;font-size:16px}
+  .pd b{font-weight:800;font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pd .num{font-size:17px}
+  .pd .place{font:400 13px var(--display);border-radius:999px;padding:2px 9px;background:var(--soft)}
+  .pd.p1{padding-top:22px}
+  .pd.p1 .place{background:var(--gold);color:#fff}
+  .board{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:0 14px}
+  .lb{display:grid;grid-template-columns:28px 36px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+  .lb:first-child{border-top:0}
+  .lb .ava{width:36px;height:36px}
+  .lb .n{font:400 14px var(--display);color:var(--muted);text-align:center}
+  .lb b{display:block;font-weight:800;line-height:1.2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb span{font-size:13px;color:var(--muted)}
+  .lb .num{font-size:16px}
+  .lb.me{background:var(--track);margin:0 -14px;padding:11px 14px;border-radius:14px}
+
+  /* призы */
+  .grand{border-radius:26px;padding:20px;color:#fff;position:relative;overflow:hidden;
+    background:radial-gradient(120% 120% at 100% 0%,#3a4bff 0%,#1a22a8 55%,#0c1060 100%);box-shadow:0 20px 40px -22px rgba(26,34,168,.8)}
+  .grand .eyebrow{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+  .grand h3{font:400 30px/1.05 var(--display);margin:8px 0 4px}
+  .grand p{margin:0;opacity:.85;font-size:15px;max-width:30ch}
+  .grand svg.car{width:78%;margin:12px 0 2px;display:block}
+  .count{display:flex;gap:8px;margin-top:8px}
+  .count div{background:rgba(255,255,255,.14);border-radius:12px;padding:8px 10px;text-align:center;min-width:58px}
+  .count b{font:400 22px/1 var(--display);display:block}
+  .count span{font-size:11px;opacity:.75}
+  .tickets{display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px 16px;margin-top:12px}
+  .tickets .num{font-size:34px;color:var(--gold)}
+  .tickets p{margin:0;font-size:14px;color:var(--muted);flex:1}
+  .prizes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pz{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:14px;display:grid;gap:4px}
+  .pz span{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
+  .pz b{font-weight:800}
+  .pz small{color:var(--muted);font-size:13px}
+  .how{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:4px 16px}
+  .how div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:15px}
+  .how div:first-child{border-top:0}
+  .how b{font-weight:800;color:var(--accent);white-space:nowrap}
+  .win{font-size:14px;color:var(--muted);display:grid;gap:6px;margin:0;padding:0;list-style:none}
+  .win li{display:flex;justify-content:space-between;gap:10px}
+  .win b{color:var(--ink);font-weight:700}
+  .legal{font-size:12px;color:var(--muted);margin-top:14px}
+
+  /* таббар */
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:color-mix(in srgb,var(--surface) 90%,transparent);
+    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-top:1px solid var(--line);
+    padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px))}
+  .tabs nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);align-items:center}
+  .tabs button{border:0;background:none;display:grid;justify-items:center;gap:2px;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+  .tabs button.on{color:var(--accent)}
+  .tabs svg{width:24px;height:24px}
+  .tabs .plus{width:56px;height:56px;border-radius:18px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;justify-self:center;
+    box-shadow:0 10px 22px -8px var(--accent);margin-top:-18px}
+  .tabs .plus svg{width:28px;height:28px}
+
+  /* листы */
+  .veil{position:fixed;inset:0;background:rgba(5,7,15,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+  .veil.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:560px;margin:0 auto;background:var(--bg);border-radius:26px 26px 0 0;
+    padding-top:10px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+    transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);max-height:92vh;overflow:auto}
+  .sheet.on{transform:none}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+  .sheet h3{font:400 24px/1.1 var(--display);margin:0 0 6px}
+  .sheet .sub{color:var(--muted);margin:0 0 16px;font-size:15px}
+  .choices{display:grid;gap:10px}
+  .choice{display:flex;gap:14px;align-items:center;background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px;border:0;text-align:left}
+  .choice .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--track);color:var(--accent);flex:none}
+  .choice b{display:block;font-weight:800}
+  .choice span{font-size:14px;color:var(--muted)}
+  .viewfinder{position:relative;aspect-ratio:1;max-width:100%;border-radius:22px;overflow:hidden;background:#05070f;margin-bottom:14px;display:grid;place-items:center}
+  .viewfinder .can{width:42%;aspect-ratio:3/4;border-radius:16px 16px 10px 10px;background:linear-gradient(90deg,#1c2140,#2d3570 45%,#1c2140);display:grid;place-items:center;
+    color:#fff;font:400 18px var(--display);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08)}
+  .viewfinder .can small{display:block;font:800 9px var(--body);letter-spacing:.14em;opacity:.6;margin-top:6px;text-align:center}
+  .viewfinder .frame{position:absolute;inset:16%;border:3px solid rgba(255,255,255,.85);border-radius:18px;
+    -webkit-mask:linear-gradient(#000 0 0) top/100% 24% no-repeat,linear-gradient(#000 0 0) bottom/100% 24% no-repeat;
+    mask:linear-gradient(#000 0 0) top/100% 24% no-repeat,linear-gradient(#000 0 0) bottom/100% 24% no-repeat}
+  .viewfinder .line{position:absolute;left:16%;right:16%;height:2px;background:var(--accent);box-shadow:0 0 14px var(--accent);top:20%;animation:scan 1.6s ease-in-out infinite alternate}
+  @keyframes scan{to{top:80%}}
+  .codein{display:flex;gap:8px}
+  .codein input{flex:1;min-width:0;border:0;outline:0;background:var(--surface);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);letter-spacing:.06em;text-transform:uppercase}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{border:0;background:var(--surface);border-radius:999px;padding:9px 14px;font-weight:700;box-shadow:0 1px 1px var(--line)}
+  .chip.on{background:var(--ink);color:var(--bg)}
+  .timer{text-align:center;padding:12px 0 6px}
+  .timer .num{font-size:64px;line-height:1}
+  .timer p{margin:8px 0 18px;color:var(--muted)}
+  .reward{text-align:center;display:grid;gap:8px;justify-items:center;padding:10px 0}
+  .reward .burst{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font:400 26px var(--display);animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.4)}}
+  .reward ul{list-style:none;margin:6px 0 14px;padding:0;display:grid;gap:6px;width:100%}
+  .reward li{display:flex;justify-content:space-between;background:var(--surface);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);font-weight:700}
+  .reward li b{color:var(--accent)}
+  .note{font-size:13px;color:var(--muted);margin:10px 2px 0}
+  .toast{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));max-width:528px;margin:0 auto;z-index:30;background:var(--ink);color:var(--bg);
+    border-radius:14px;padding:12px 16px;font-size:15px;font-weight:600;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+  .toast.on{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="logo"><b>NDWS</b><span class="tag">Move · демо</span></div>
+    <button class="me" onclick="openProfile()" aria-label="Профиль"><span class="ava" style="background:#2a3cff">Т</span><b class="num" id="hdrPts">0</b></button>
+  </header>
+
+  <section class="view" id="v-today"></section>
+  <section class="view" id="v-feed" hidden></section>
+  <section class="view" id="v-top" hidden></section>
+  <section class="view" id="v-prizes" hidden></section>
+</div>
+
+<div class="tabs"><nav id="tabs">
+  <button data-v="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Сегодня</button>
+  <button data-v="feed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 10h16M10 10v10"/></svg>Лента</button>
+  <button class="plus" onclick="openPlus()" aria-label="Добавить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button data-v="top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V11M12 20V5M18 20v-6"/></svg>Рейтинг</button>
+  <button data-v="prizes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13h16M12 9c-2-4-6-4-6-1.5S9 9 12 9c3 0 6-.5 6-1.5S14 5 12 9z"/></svg>Призы</button>
+</nav></div>
+<div class="toast" id="toast"></div>
+<div class="veil" id="veil" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheetBody"></div></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString("ru-RU");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const plural = (n, a, b, c) => n%10===1&&n%100!==11 ? a : n%10>=2&&n%10<=4&&(n%100<10||n%100>=20) ? b : c;
+const haptic = t => { try{ tg?.HapticFeedback?.notificationOccurred(t); }catch(e){} };
+
+// ---------- состояние демо (все люди и цифры — примеры) ----------
+const DAY = 864e5, NOW = Date.now();
+const S = load() || {
+  name: tg?.initDataUnsafe?.user?.first_name || "Тимур", gym: "Атлет", points: 4820, tickets: 3, streak: 4,
+  steps: 7340, goal: 10000, boostUntil: NOW + 23*DAY, codes: 2, liked: {},
+  workouts: 11, joined: {steps7: true, w30: true},
+};
+function load(){ try{ const s = JSON.parse(localStorage.getItem("ndws-demo")); return s && s.v === 1 ? s.d : null; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem("ndws-demo", JSON.stringify({v:1, d:S})); }catch(e){} }
+const boost = () => S.boostUntil > Date.now() ? 2 : 1;
+const COLORS = ["#2a3cff","#f2601f","#12925c","#c8920f","#a23ce0","#0e8fb0","#d6336c"];
+const ava = (name, i) => `<span class="ava" style="background:${COLORS[i % COLORS.length]}">${esc(name[0])}</span>`;
+
+const PEOPLE = [
+  ["Айпери К.","Iron House",9420],["Бекзат Т.","Атлет",8770],["Нурлан А.","Атлет",8115],["Жылдыз М.","Fit Zone",7390],
+  ["Эрлан С.","Iron House",6040],["Айбек Ж.","Fit Zone",5210],["Камила Р.","Атлет",4410],["Данияр Б.","Iron House",3980],
+];
+const GYMS = [["Iron House","Бишкек, 6 мкр",48210],["Атлет","Бишкек, Джал",45980],["Fit Zone","Бишкек, центр",39120],["Спарта","Ош",27450],["Олимп","Каракол",18300]];
+const FEED = [
+  {id:"p1", who:"Айпери К.", i:4, gym:"Iron House", ago:"12 мин", kind:"Силовая", big:"62 мин", text:"Ноги и спина. Протеин после — обязательно 💪", likes:24, pts:620, bg:"linear-gradient(135deg,#2a3cff,#0c1060)"},
+  {id:"p2", who:"Бекзат Т.", i:1, gym:"Атлет", ago:"40 мин", kind:"Шаги", big:"14 208", text:"Седьмой день подряд 10 000+. Челлендж закрыт, билет мой!", likes:51, pts:1000, bg:"linear-gradient(135deg,#f2601f,#a3290a)"},
+  {id:"p3", who:"Команда Iron House", i:2, gym:"командный челлендж", ago:"2 ч", kind:"Неделя 42", big:"+3 120", text:"Обгоняем «Атлет» на 2 230 баллов. До конца недели 3 дня — все на тренировку.", likes:88, pts:null, bg:"linear-gradient(135deg,#12925c,#06452b)"},
+  {id:"p4", who:"Жылдыз М.", i:3, gym:"Fit Zone", ago:"5 ч", kind:"Бег", big:"8,4 км", text:"Утро вдоль Ала-Арчи. Темп 5:40.", likes:33, pts:420, bg:"linear-gradient(135deg,#0e8fb0,#063f50)"},
+];
+
+// ---------- сегодня ----------
+function ring(v, max){
+  const r = 56, c = 2*Math.PI*r, p = Math.min(1, v/max);
+  return `<svg viewBox="0 0 132 132" aria-hidden="true"><circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--track)" stroke-width="12"/>
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c*p} ${c}"/></svg>`;
+}
+function renderToday(){
+  const b = boost(), days = Math.ceil((S.boostUntil - Date.now())/DAY);
+  const h = new Date().getHours(), hi = h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
+  $("v-today").innerHTML = `<h1>${hi}, ${esc(S.name)}</h1>
+    <div class="today">
+      <div class="ring">${ring(S.steps, S.goal)}<div class="in"><b class="num">${fmt(S.steps)}</b><span>из ${fmt(S.goal)} шагов</span></div></div>
+      <div class="stats">
+        <div class="stat"><span>Баллы</span><b class="num">${fmt(S.points)}</b></div>
+        <div class="stat"><span>Серия</span><b class="num flame">${S.streak} ${plural(S.streak,"день","дня","дней")}</b></div>
+        <div class="stat"><span>Билеты</span><b class="num" style="color:var(--gold)">${S.tickets}</b></div>
+      </div>
+    </div>
+    <div class="boost ${b>1?"":"off"}"><span class="x">×${b}</span>
+      <p>${b>1 ? `Бонус NDWS активен ещё ${days} ${plural(days,"день","дня","дней")}: все баллы удваиваются.` : "Отсканируйте код с банки NDWS: баллы ×2 на 30 дней и билет в розыгрыш."}</p>
+      <button class="btn light" onclick="openScan()">Скан</button></div>
+
+    <div class="sec"><h2>Челленджи</h2><button class="link" onclick="toast('Все челленджи — в рабочей версии')">Все</button></div>
+    <div class="chal">
+      <div class="ch"><div class="ch-top"><b>10 000 шагов 7 дней подряд</b><span>осталось 3 дня</span></div>
+        <div class="dots">${Array.from({length:7},(_,i)=>`<i class="${i<S.streak?"on":""}"></i>`).join("")}</div>
+        <div class="ch-foot"><span>${S.streak} из 7</span><em>+1 билет</em></div></div>
+      <div class="ch"><div class="ch-top"><b>30 тренировок за сезон</b><span>до 31 декабря</span></div>
+        <div class="bar"><i style="width:${S.workouts/30*100}%"></i></div>
+        <div class="ch-foot"><span>${S.workouts} из 30</span><em>+3 билета</em></div></div>
+      <div class="ch"><div class="ch-top"><b>Зал против зала</b><span>неделя 42</span></div>
+        <div class="bar"><i style="width:52%;background:var(--ok)"></i></div>
+        <div class="ch-foot"><span>Ваш «${esc(S.gym)}» — 2-е место</span><em>набор NDWS команде</em></div></div>
+    </div>
+
+    <div class="sec"><h2>Быстро</h2></div>
+    <div class="quick">
+      <button class="tile" onclick="openWorkout()"><span class="ic">${ICON.bolt}</span><div><b>Тренировка</b><span>таймер и баллы</span></div></button>
+      <button class="tile" onclick="openInvite()"><span class="ic">${ICON.users}</span><div><b>Позвать друга</b><span>+500 баллов обоим</span></div></button>
+    </div>
+    <p class="note">В демо шаги примерные. В приложении они берутся из Google Health Connect и Apple Health.</p>`;
+}
+
+// ---------- лента ----------
+function renderFeed(){
+  $("v-feed").innerHTML = `<h1>Лента</h1>` + FEED.map(p => {
+    const on = !!S.liked[p.id];
+    return `<article class="post"><div class="p-head">${ava(p.who, p.i)}<div><b>${esc(p.who)}</b><span>${esc(p.gym)} · ${p.ago}</span></div></div>
+      <div class="p-art" style="background:${p.bg}"><div class="big num">${esc(p.big)}<small>${esc(p.kind)}</small></div></div>
+      <p class="p-text">${esc(p.text)}</p>
+      <div class="p-act"><button class="${on?"on":""}" onclick="like('${p.id}')" aria-label="Огонь">${ICON.fire}<span>${p.likes + (on?1:0)}</span></button>
+        <button onclick="toast('Комментарии — в рабочей версии')">${ICON.chat}<span>${Math.round(p.likes/4)}</span></button>
+        ${p.pts ? `<span class="p-pts">+${fmt(p.pts)} баллов</span>` : ""}</div></article>`;
+  }).join("");
+}
+function like(id){ S.liked[id] = !S.liked[id]; save(); haptic("success"); renderFeed(); }
+
+// ---------- рейтинг ----------
+let TOP = "city";
+function renderTop(){
+  const me = [S.name + " (вы)", S.gym, S.points, true];
+  let rows = TOP === "gyms" ? GYMS.map(g => [g[0], g[1], g[2]]) : [...PEOPLE, me].sort((a,b) => b[2]-a[2]);
+  if(TOP === "friends") rows = rows.filter((r, i) => r[3] || [1,2,6].includes(PEOPLE.indexOf(r)));
+  const p = rows.slice(0, 3);
+  const podium = [p[1], p[0], p[2]].map((r, k) => r ? `<div class="pd ${k===1?"p1":""}">${ava(r[0], rows.indexOf(r))}<b>${esc(r[0])}</b>
+    <span class="num">${fmt(r[2])}</span><span class="place">${rows.indexOf(r)+1}</span></div>` : "<div></div>").join("");
+  $("v-top").innerHTML = `<h1>Рейтинг сезона</h1>
+    <div class="seg">${[["city","Бишкек"],["friends","Друзья"],["gyms","Залы"]].map(([k,n]) => `<button class="${TOP===k?"on":""}" onclick="TOP='${k}';renderTop()">${n}</button>`).join("")}</div>
+    <div class="podium">${podium}</div>
+    <div class="board">${rows.slice(3).map((r) => `<div class="lb ${r[3]?"me":""}"><span class="n">${rows.indexOf(r)+1}</span>${ava(r[0], rows.indexOf(r))}
+      <div style="min-width:0"><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div><span class="num">${fmt(r[2])}</span></div>`).join("")}</div>
+    <p class="note">Топ-10 сезона получают по набору NDWS. Место считается по баллам: тренировки, шаги, челленджи; с бонусом NDWS — ×2.</p>`;
+}
+
+// ---------- призы ----------
+const SEASON_END = new Date(new Date().getFullYear(), 11, 31, 20, 0);
+function renderPrizes(){
+  const ms = Math.max(0, SEASON_END - Date.now()), d = Math.floor(ms/DAY), h = Math.floor(ms%DAY/36e5), m = Math.floor(ms%36e5/6e4);
+  $("v-prizes").innerHTML = `<h1>Призы</h1>
+    <div class="grand"><div class="eyebrow">Главный приз сезона</div><h3>Автомобиль</h3>
+      <p>Розыгрыш 31 декабря в прямом эфире. Участвуют все билеты сезона.</p>
+      ${CAR}
+      <div class="count"><div><b>${d}</b><span>дней</span></div><div><b>${h}</b><span>часов</span></div><div><b>${m}</b><span>минут</span></div></div></div>
+    <div class="tickets"><span class="num">${S.tickets}</span><p>${plural(S.tickets,"билет","билета","билетов")} у вас в розыгрыше. Больше билетов — выше шанс.</p>
+      <button class="btn" onclick="openScan()">+ билет</button></div>
+
+    <div class="sec"><h2>Каждый месяц и неделю</h2></div>
+    <div class="prizes">
+      <div class="pz"><span>Месяц</span><b>Смартфон</b><small>3 победителя</small></div>
+      <div class="pz"><span>Месяц</span><b>Абонемент в зал на год</b><small>5 победителей</small></div>
+      <div class="pz"><span>Неделя</span><b>Набор NDWS</b><small>протеин, BCAA, шейкер · 10 победителей</small></div>
+      <div class="pz"><span>Неделя</span><b>Мерч NDWS</b><small>футболка и шейкер · 20 победителей</small></div>
+    </div>
+
+    <div class="sec"><h2>Как получить билет</h2></div>
+    <div class="how">
+      <div><span>Отсканировать код с банки NDWS</span><b>1 билет</b></div>
+      <div><span>Закрыть челлендж «7 дней по 10 000»</span><b>1 билет</b></div>
+      <div><span>30 тренировок за сезон</span><b>3 билета</b></div>
+      <div><span>Друг купил NDWS по вашему коду</span><b>1 билет</b></div>
+    </div>
+
+    <div class="sec"><h2>Уже выиграли</h2></div>
+    <ul class="win"><li><b>Айпери К., Бишкек</b><span>набор NDWS · неделя 41</span></li>
+      <li><b>Эрлан С., Ош</b><span>абонемент на год · сентябрь</span></li>
+      <li><b>Камила Р., Бишкек</b><span>смартфон · сентябрь</span></li></ul>
+    <p class="legal">Демо: призы, имена и даты примерные. Условия розыгрыша утверждаются по закону КР до запуска.</p>`;
+}
+const CAR = `<svg class="car" viewBox="0 0 300 120" aria-hidden="true"><ellipse cx="150" cy="111" rx="132" ry="6" fill="rgba(0,0,0,.35)"/>
+  <path d="M20 98C20 88 26 84 38 82L82 76C100 58 120 48 148 46L178 46C204 46 222 56 240 72L266 77C276 79 280 85 280 92L280 100C280 104 277 106 273 106L26 106C22 106 20 103 20 98Z" fill="#f5f6ff"/>
+  <path d="M94 76C108 61 124 53 146 52L158 52 160 76Z M168 52L178 52C198 52 214 61 228 74L168 76Z" fill="#141a52"/>
+  <path d="M264 81L278 84 278 89 264 87Z" fill="#ffd36b"/>
+  <circle cx="78" cy="104" r="20" fill="#0a0d2a"/><circle cx="78" cy="104" r="11" fill="#9aa3d8"/><circle cx="222" cy="104" r="20" fill="#0a0d2a"/><circle cx="222" cy="104" r="11" fill="#9aa3d8"/></svg>`;
+
+// ---------- «+»: скан банки, тренировка ----------
+function openPlus(){
+  haptic("success");
+  openSheet(`<h3>Добавить</h3><p class="sub">Баллы сейчас ×${boost()}</p><div class="choices">
+    <button class="choice" onclick="openScan()"><span class="ic">${ICON.scan}</span><div><b>Сканировать банку NDWS</b><span>+500 баллов, билет и ×2 на 30 дней</span></div></button>
+    <button class="choice" onclick="openWorkout()"><span class="ic">${ICON.bolt}</span><div><b>Начать тренировку</b><span>${5*boost()} баллов за минуту</span></div></button>
+    <button class="choice" onclick="toast('Шаги считаются сами — из Health Connect / Apple Health')"><span class="ic">${ICON.steps}</span><div><b>Шаги</b><span>синхронизируются автоматически</span></div></button>
+  </div>`);
+}
+function openScan(){
+  openSheet(`<h3>Код с банки</h3><p class="sub">Наведите камеру на QR-код под крышкой или введите код вручную.</p>
+    <div class="viewfinder"><div class="can">NDWS<small>WHEY · 2,27 КГ</small></div><div class="frame"></div><div class="line"></div></div>
+    <button class="btn wide" onclick="scanned()">Сканировать</button>
+    <div class="codein" style="margin-top:10px"><input id="codeIn" placeholder="NDWS-7K2F-9QX4" maxlength="16" aria-label="Код"><button class="btn ghost" onclick="scanned($('codeIn').value)">OK</button></div>
+    <p class="note">Каждый код уникален и работает один раз. В демо подойдёт любой.</p>`);
+}
+function scanned(code){
+  if(code !== undefined && code.trim().length < 4) return toast("Введите код с банки");
+  S.points += 500; S.tickets += 1; S.codes += 1; S.boostUntil = Math.max(S.boostUntil, Date.now()) + 30*DAY; save(); haptic("success");
+  openSheet(`<div class="reward"><div class="burst">+500</div><h3>Код принят</h3><p class="sub">Whey Protein 2,27 кг · спасибо, что вы с NDWS</p>
+    <ul><li>Баллы<b>+500</b></li><li>Билет в розыгрыш автомобиля<b>+1</b></li><li>Бонус ×2<b>+30 дней</b></li></ul>
+    <button class="btn wide" onclick="closeSheet()">Отлично</button></div>`);
+  render();
+}
+let W = {type:"Силовая", t0:0, timer:null};
+function openWorkout(){
+  const types = ["Силовая","Бег","Футбол","Бокс","Йога","Плавание","Велосипед"];
+  openSheet(`<h3>Тренировка</h3><p class="sub">Выберите вид и жмите «Старт». Баллы ×${boost()}.</p>
+    <div class="chips" id="wType">${types.map(t => `<button class="chip ${t===W.type?"on":""}" data-t="${t}">${t}</button>`).join("")}</div>
+    <div class="timer"><div class="num" id="wClock">00:00</div><p id="wPts">0 баллов</p></div>
+    <button class="btn wide" id="wBtn" onclick="toggleWorkout()">Старт</button>
+    <p class="note">В демо минута идёт за секунду. В приложении можно приложить фото из зала: так тренировки честнее, а лента живее.</p>`);
+  $("wType").onclick = e => { const b = e.target.closest(".chip"); if(!b || W.timer) return; W.type = b.dataset.t;
+    [...$("wType").children].forEach(x => x.classList.toggle("on", x===b)); };
+}
+function toggleWorkout(){
+  if(!W.timer){
+    W.t0 = Date.now(); $("wBtn").textContent = "Завершить"; haptic("success");
+    W.timer = setInterval(() => { const min = Math.floor((Date.now()-W.t0)/1000);  // демо: секунда = минута
+      $("wClock").textContent = `${String(Math.floor(min/60)).padStart(2,"0")}:${String(min%60).padStart(2,"0")}`;
+      $("wPts").textContent = `${fmt(min*5*boost())} баллов`; }, 250);
+    return;
+  }
+  clearInterval(W.timer); W.timer = null;
+  const min = Math.max(1, Math.floor((Date.now()-W.t0)/1000)), pts = min*5*boost();
+  S.points += pts; S.workouts += 1; save(); haptic("success");
+  FEED.unshift({id:"me"+Date.now(), who:S.name, i:0, gym:S.gym, ago:"только что", kind:W.type, big:`${min} мин`, text:"Тренировка засчитана.", likes:0, pts, bg:"linear-gradient(135deg,#2a3cff,#f2601f)"});
+  openSheet(`<div class="reward"><div class="burst">+${fmt(pts)}</div><h3>Тренировка засчитана</h3><p class="sub">${esc(W.type)} · ${min} мин${boost()>1?" · бонус ×2":""}</p>
+    <ul><li>Баллы<b>+${fmt(pts)}</b></li><li>Челлендж «30 тренировок»<b>${S.workouts} из 30</b></li></ul>
+    <button class="btn wide" onclick="closeSheet();go('feed')">Смотреть в ленте</button></div>`);
+  render();
+}
+function openInvite(){
+  const code = "NDWS-" + (S.name.slice(0,3).toUpperCase()) + "-24";
+  openSheet(`<h3>Позвать друга</h3><p class="sub">Друг получает 500 баллов на старт. Вы получаете 500 баллов, а если он купит NDWS, ещё и билет.</p>
+    <div class="ch" style="text-align:center"><span style="font-size:13px;color:var(--muted)">Ваш код</span><b class="num" style="font-size:28px">${esc(code)}</b></div>
+    <button class="btn wide" style="margin-top:12px" onclick="share('${esc(code)}')">Отправить в Telegram</button>`);
+}
+function share(code){
+  const text = `Тренируюсь с NDWS Move — баллы, челленджи и розыгрыш автомобиля. Мой код: ${code}`;
+  if(tg?.openTelegramLink) tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent("https://t.me/")}&text=${encodeURIComponent(text)}`);
+  else { navigator.clipboard?.writeText(text).then(() => toast("Текст приглашения скопирован"), () => toast(text)); }
+}
+function openProfile(){
+  openSheet(`<h3>${esc(S.name)}</h3><p class="sub">Зал «${esc(S.gym)}» · сезон «Осень–зима»</p>
+    <div class="how"><div><span>Баллы</span><b>${fmt(S.points)}</b></div><div><span>Тренировок</span><b>${S.workouts}</b></div>
+      <div><span>Отсканировано банок</span><b>${S.codes}</b></div><div><span>Билетов</span><b>${S.tickets}</b></div></div>
+    <button class="btn ghost wide" style="margin-top:12px" onclick="resetDemo()">Сбросить демо</button>`);
+}
+function resetDemo(){ try{ localStorage.removeItem("ndws-demo"); }catch(e){} location.reload(); }
+
+const ICON = {
+  bolt:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>`,
+  users:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 2.8 2.5 3 5.2"/></svg>`,
+  scan:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></svg>`,
+  steps:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 4c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5zM16 10c2 0 3 2 3 4.5S18 19 16 19s-3-2-3-4.5 1-4.5 3-4.5zM6 17h4M14 21.5h4"/></svg>`,
+  fire:`<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 4 5 5.5 5 11a5 5 0 0 1-10 0c0-2.5 1.2-4 2.5-5 .2 1.6.9 2.6 2 3 0-3.5-.8-6 .5-9z"/></svg>`,
+  chat:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
+};
+
+// ---------- оболочка ----------
+let sheetOpen = false;
+function openSheet(html){ $("sheetBody").innerHTML = html; sheetOpen = true; $("veil").classList.add("on"); $("sheet").classList.add("on"); tg?.BackButton?.show(); }
+function closeSheet(){ if(W.timer){ clearInterval(W.timer); W.timer = null; } sheetOpen = false; $("veil").classList.remove("on"); $("sheet").classList.remove("on"); tg?.BackButton?.hide(); }
+let toastT;
+function toast(s){ const t = $("toast"); t.textContent = s; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 3200); }
+
+const VIEWS = {today:renderToday, feed:renderFeed, top:renderTop, prizes:renderPrizes};
+function go(v){ location.hash = v === "today" ? "" : v; }
+function render(){
+  const v = VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : "today";
+  for(const k in VIEWS) $("v-"+k).hidden = k !== v;
+  document.querySelectorAll("#tabs [data-v]").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  $("hdrPts").textContent = fmt(S.points);
+  VIEWS[v]();
+}
+document.querySelectorAll("#tabs [data-v]").forEach(b => b.onclick = () => { go(b.dataset.v); try{ tg?.HapticFeedback?.selectionChanged(); }catch(e){} });
+window.addEventListener("hashchange", () => { render(); window.scrollTo(0, 0); });
+tg?.BackButton?.onClick(closeSheet);
+if(tg?.initData){ tg.ready(); tg.expand(); document.documentElement.dataset.theme = tg.colorScheme === "dark" ? "dark" : "light"; }
+// шаги «капают», пока открыто — чтобы кольцо было живым
+setInterval(() => { if(document.hidden) return; S.steps = Math.min(S.goal + 4000, S.steps + 7 + Math.floor(Math.random()*9));
+  if(!location.hash.slice(1) && !sheetOpen) renderToday(); }, 4000);
+render();
+</script>
+</body>
+</html>
